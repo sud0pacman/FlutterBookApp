@@ -1,5 +1,7 @@
 import 'package:book_store/bloc/audio_bloc/audio_bloc.dart';
+import 'package:book_store/data/local/my_pref.dart';
 import 'package:book_store/data/model/book_data.dart';
+import 'package:book_store/presentation/screens/pdf_viewer/pdf_screen.dart';
 import 'package:book_store/ui/theme/light_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -20,15 +22,23 @@ class AudioScreen extends StatefulWidget {
 class _AudioScreenState extends State<AudioScreen> {
   final BookData book;
 
-  bool isStart = false;
+  final SharedPreferencesHelper _pref = SharedPreferencesHelper();
 
   final audioPlayer = AudioPlayer();
   bool isPlaying = false;
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
+  ReleaseMode mode = ReleaseMode.stop;
 
   _AudioScreenState({required this.book});
 
+
+  @override
+  void dispose() {
+    super.dispose();
+    audioPlayer.stop();
+    audioPlayer.release();
+  }
 
   @override
   void initState() {
@@ -57,7 +67,7 @@ class _AudioScreenState extends State<AudioScreen> {
 
 
   Future<void> setAudio() async{
-    audioPlayer.setReleaseMode(ReleaseMode.loop);
+    audioPlayer.setReleaseMode(mode);
     String url = book.audioUrl;
     audioPlayer.setSourceUrl(url);
   }
@@ -67,42 +77,123 @@ class _AudioScreenState extends State<AudioScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<AudioBloc, AudioState>(
         listener: (context, state) {
-
+          if(state.back) Navigator.pop(context, true);
         },
         builder: (context, state) {
-          return SafeArea(
-            child: Scaffold(
-              backgroundColor: Colors.white,
-              body: Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  Positioned(
-                    top: -MediaQuery.of(context).size.height / 2,
-                    left: 0,
-                    right: 0,
-                    child: myCircle(
-                      MediaQuery.of(context).size.height,
-                      MediaQuery.of(context).size.height
-                    )
-                  ),
-                  Positioned(
-                      child: Column(
-                        children: [
-                          myAppBar("Now Playing"),
-                          const SizedBox(height: 25,),
-                          infoSection(book),
-                          musicSection()
-                        ],
-                      )
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                Positioned(
+                  top: -MediaQuery.of(context).size.height / 2,
+                  left: 0,
+                  right: 0,
+                  child: myCircle(
+                    MediaQuery.of(context).size.height,
+                    MediaQuery.of(context).size.height
                   )
-                ],
-              ),
+                ),
+                Positioned(
+                    child: Column(
+                      children: [
+                        myAppBar("Now Playing"),
+                        const SizedBox(height: 35,),
+                        infoSection(book),
+                        const SizedBox(height: 35,),
+                        musicSection(),
+                        const SizedBox(height: 35,),
+                        audioStatusSection()
+                      ],
+                    )
+                )
+              ],
             ),
           );
         },
     );
   }
-  
+
+  Widget audioStatusSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          nightBtn(),
+          const SizedBox(width: 15,),
+          replayBtn(),
+          const SizedBox(width: 15,),
+          bookMarkBtn()
+        ],
+      ),
+    );
+  }
+
+  Widget replayBtn() {
+    return InkWell(
+      onTap: () async{
+
+        mode = mode == ReleaseMode.stop ? ReleaseMode.loop : ReleaseMode.stop;
+        await audioPlayer.setReleaseMode(mode);
+
+        setState(() {
+        });
+      },
+      child: Container(
+        height: 52,
+        width: 52,
+        padding: const EdgeInsets.all(17),
+        child: Image.asset(
+          MainImages.replay,
+          color: mode == ReleaseMode.stop ? LightColors.grey : LightColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget bookMarkBtn() {
+    var bookMarkStatus = _pref.getString(book.id);
+    return InkWell(
+      onTap: () async{
+        bookMarkStatus ??= "";
+
+        if(bookMarkStatus!.isNotEmpty) {
+          await _pref.setString(book.id, "");
+        }
+        else {
+          await _pref.setString(book.id, book.id);
+        }
+
+        print("*********************************  bookmark status $bookMarkStatus");
+
+        setState(() {
+        });
+      },
+      child: Container(
+        height: 52,
+        width: 52,
+        padding: const EdgeInsets.all(17),
+        child: Image.asset(
+            MainImages.bookmark,
+            color: bookMarkStatus == null || bookMarkStatus.isEmpty
+                ? LightColors.grey
+                : LightColors.primary),
+      ),
+    );
+  }
+
+  Widget nightBtn() {
+    return Container(
+      height: 52,
+      width: 52,
+      padding: const EdgeInsets.all(17),
+      child: Image.asset(
+        MainImages.night,
+      ),
+    );
+  }
+
   Widget musicSection() {
     return Column(
       children: [
@@ -133,12 +224,72 @@ class _AudioScreenState extends State<AudioScreen> {
           ),
         ),
 
+        const SizedBox(height: 30,),
         controllerButton()
       ],
     );
   }
 
   Widget controllerButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          seekToLeft(5),
+          pauseStop(),
+          seekToRight(5)
+        ],
+      ),
+    );
+  }
+
+  Widget seekToRight(
+      int second
+    ) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          position += Duration(seconds: second);
+          audioPlayer.seek(position);
+        });
+      },
+      child: Container(
+        height: 52,
+        width: 52,
+        padding: const EdgeInsets.all(15),
+        child: Image.asset(
+          MainImages.rightController,
+        ),
+      ),
+    );
+  }
+
+  Widget seekToLeft(
+    int second
+  ) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if(position - Duration(seconds: second) < Duration.zero) return;
+          position -= Duration(seconds: second);
+          audioPlayer.seek(position);
+        });
+      },
+      child: Container(
+        height: 52,
+        width: 52,
+        padding: const EdgeInsets.all(15),
+        child: Image.asset(
+          MainImages.leftController,
+          height: 14,
+          width: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget pauseStop() {
     return InkWell(
       hoverColor: Colors.transparent,
       highlightColor: Colors.transparent,
@@ -153,7 +304,7 @@ class _AudioScreenState extends State<AudioScreen> {
       child: Container(
         height: 52,
         width: 52,
-        padding: EdgeInsets.all(15),
+        padding: const EdgeInsets.all(15),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: LightColors.primary.withAlpha(30),
@@ -195,37 +346,54 @@ class _AudioScreenState extends State<AudioScreen> {
 
   Widget myImg(String imgUrl) {
     var width = MediaQuery.of(context).size.width / 2;
-    return Container(
-      width: width,
-      height: width + (width / 3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-        image: DecorationImage(
-          fit: BoxFit.cover,
-          image: NetworkImage(imgUrl,),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey,
-            blurRadius: 4,
-            offset: Offset(4, 8), // Shadow position
+    return InkWell(
+      onTap: () {
+        print("***********************  pdf url ${book.pdfUrl}");
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PDFScreen(url: book.pdfUrl,),
           ),
-        ]
+        );
+      },
+      child: Container(
+        width: width,
+        height: width + (width / 3),
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          image: DecorationImage(
+            fit: BoxFit.cover,
+            image: NetworkImage(imgUrl,),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey,
+              blurRadius: 4,
+              offset: Offset(4, 8), // Shadow position
+            ),
+          ]
+        ),
       ),
     );
   }
 
   AppBar myAppBar(String title) {
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: Colors.transparent,
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset(
-            MainImages.back,
-            width: 24,
-            height: 24,
-            color: Colors.white,
+          InkWell(
+            onTap: () {
+              context.read<AudioBloc>().add(BackEvent());
+            },
+            child: Image.asset(
+              MainImages.back,
+              width: 24,
+              height: 24,
+              color: Colors.white,
+            ),
           ),
 
           BoldText(

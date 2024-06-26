@@ -28,7 +28,7 @@ class _SignInScreenState extends State<SignInScreen> {
       listener: (context, state) {
         if (state.signed) {
           // Navigate to HomeScreen only if HomeBloc is provided above
-          Navigator.pushAndRemoveUntil(
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => BlocProvider(
@@ -38,7 +38,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
             ),
-                (route) => false,
           );
         }
         if (state.back) {
@@ -62,11 +61,18 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(height: 50),
                     Row(
                       children: [
-                        Image.asset(
-                          MainImages.back,
-                          height: 24,
-                          width: 24,
-                          color: LightColors.grey,
+                        InkWell(
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                          child: Image.asset(
+                            MainImages.back,
+                            height: 24,
+                            width: 24,
+                            color: LightColors.grey,
+                          ),
                         ),
 
                         const SizedBox(width: 15,),

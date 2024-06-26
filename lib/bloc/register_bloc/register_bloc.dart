@@ -33,6 +33,7 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
       );
 
       _pref.setString(ConstantKeys.registerStatus, "1");
+      _pref.setString(ConstantKeys.mail, event.mail);
 
       emit(state.copyWith(registered: true, toast: "Success"));
     } catch (e) {

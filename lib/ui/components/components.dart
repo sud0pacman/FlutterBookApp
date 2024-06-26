@@ -3,6 +3,46 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import '../theme/main_images.dart';
+
+AppBar myAppBar(
+    String title,
+    Color iconColor,
+    Color titleColor,
+    VoidCallback onTap,
+) {
+  return AppBar(
+    automaticallyImplyLeading: false,
+    backgroundColor: Colors.transparent,
+    title: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Image.asset(
+            MainImages.back,
+            width: 24,
+            height: 24,
+            color: iconColor,
+          ),
+        ),
+
+        BoldText(
+          text: title,
+          color: titleColor,
+        ),
+
+        Icon(
+          Icons.more_vert,
+          size: 24,
+          color: iconColor,
+        )
+      ],
+    ),
+  );
+}
+
+
 class BoldText extends StatelessWidget {
   final String text;
   final double fontSize;
@@ -55,6 +95,34 @@ class RegularText extends StatelessWidget {
     );
   }
 }
+
+
+class MediumText extends StatelessWidget {
+  final String text;
+  final double fontSize;
+  final Color color;
+
+  const MediumText({
+    super.key,
+    required this.text,
+    this.fontSize = 14,
+    this.color = LightColors.grey
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontFamily: "UbuntuMedium",
+          height: .1
+      ),
+    );
+  }
+}
+
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;

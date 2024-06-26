@@ -1,4 +1,5 @@
 class BookData {
+  final String id;
   final String authorName;
   final String bookName;
   final String category;
@@ -7,6 +8,7 @@ class BookData {
   final String imgUrl;
 
   BookData({
+    required this.id,
     required this.authorName,
     required this.bookName,
     required this.category,
@@ -15,8 +17,9 @@ class BookData {
     required this.imgUrl,
   });
 
-  factory BookData.fromMap(Map<String, dynamic> data) {
+  factory BookData.fromMap(String id, Map<String, dynamic> data) {
     return BookData(
+      id: id,
       authorName: data['author_name'] ?? '',
       bookName: data['book_name'] ?? '',
       category: data['category'] ?? '',
